@@ -205,23 +205,22 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 
   // ── LOGIN ──────────────────────────────────────────────────────────────────
 
-  async function requestPin() {
-    const email = document.getElementById('login-email').value.trim().toLowerCase();
-    const err   = document.getElementById('login-error');
-    if (!email) { err.textContent = 'Introduce tu email'; return; }
-    err.textContent = 'Enviando código...';
-    try {
-      const res  = await fetch(`${SCRIPT_URL}?action=requestPin&email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      if (!data.ok) { err.textContent = data.error || 'Email no reconocido'; return; }
-      document.getElementById('step-email').style.display = 'none';
-      document.getElementById('step-pin').style.display = '';
-      document.getElementById('pin-desc').textContent = `Hemos enviado un código de 6 dígitos a ${email}. Caduca en 10 minutos.`;
-      document.getElementById('login-pin').focus();
-    } catch(e) {
-      err.textContent = 'Error al enviar el código. Inténtalo de nuevo.';
-    }
-  }
+async function requestPin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const err   = document.getElementById('login-error');
+  if (!email) { err.textContent = 'Introduce tu email'; return; }
+  err.textContent = 'Enviando código...';
+  
+  const img = new Image();
+  img.src = `${SCRIPT_URL}?action=requestPin&email=${encodeURIComponent(email)}&t=${Date.now()}`;
+  
+  setTimeout(() => {
+    document.getElementById('step-email').style.display = 'none';
+    document.getElementById('step-pin').style.display = '';
+    document.getElementById('pin-desc').textContent = `Hemos enviado un código de 6 dígitos a ${email}. Caduca en 10 minutos.`;
+    document.getElementById('login-pin').focus();
+  }, 2000);
+}
 
   async function verifyPin() {
     const email = document.getElementById('login-email').value.trim().toLowerCase();

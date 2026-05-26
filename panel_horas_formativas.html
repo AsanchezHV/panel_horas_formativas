@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de horas formativas · Hoy Voy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: #fafaf8; color: #1a1a1a; min-height: 100vh; }
+
+    /* TOP BAR */
+    .top-bar { background: #fff; border-bottom: 1px solid #e8e8e2; padding: 14px 2rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .top-bar-left { display: flex; align-items: center; gap: 12px; }
+    .top-bar img { width: 42px; height: 42px; }
+    .top-bar-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #aaa; }
+    .top-bar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .user-badge { font-size: 12px; font-weight: 700; color: #555; background: #f0f0ea; padding: 6px 12px; border-radius: 20px; }
+    .btn-logout { font-size: 12px; font-weight: 700; color: #aaa; background: none; border: none; cursor: pointer; font-family: inherit; }
+    .btn-logout:hover { color: #555; }
+
+    /* HERO */
+    .hero { background: #f5e400; padding: 24px 2rem 20px; border-bottom: 1px solid #e0d000; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .hero h1 { font-size: clamp(16px, 2.5vw, 20px); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+    .hero-controls { display: flex; align-items: center; gap: 10px; }
+    .hero select { padding: 8px 12px; border: 1.5px solid #c8ba00; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 700; background: #fff; outline: none; cursor: pointer; }
+
+    /* LOGIN */
+    .login-wrap { max-width: 400px; margin: 4rem auto; padding: 0 1.5rem; }
+    .login-card { background: #fff; border: 1px solid #e8e8e2; border-radius: 16px; padding: 32px; }
+    .login-card h2 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+    .login-card p { font-size: 13px; color: #777; font-weight: 600; margin-bottom: 20px; }
+    .login-card input { width: 100%; padding: 11px 14px; border: 1.5px solid #ddd; border-radius: 9px; font-family: inherit; font-size: 14px; font-weight: 600; background: #fafaf8; outline: none; margin-bottom: 12px; }
+    .login-card input:focus { border-color: #c8ba00; }
+    .btn-primary { width: 100%; padding: 12px; border: none; border-radius: 9px; background: #1a1a1a; color: #fff; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.8; }
+    .login-error { font-size: 13px; font-weight: 700; color: #b94040; margin-top: 10px; min-height: 18px; }
+
+    /* MAIN */
+    .main { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem 4rem; }
+
+    /* KPIs */
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 2rem; }
+    .kpi { background: #fff; border: 1px solid #e8e8e2; border-radius: 12px; padding: 16px 18px; }
+    .kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #aaa; margin-bottom: 6px; }
+    .kpi-value { font-size: 24px; font-weight: 800; }
+    .kpi-value.green { color: #1a7a45; }
+    .kpi-value.red { color: #b94040; }
+    .kpi-value.orange { color: #c07000; }
+
+    /* MATRIX */
+    .matrix-wrap { background: #fff; border: 1px solid #e8e8e2; border-radius: 14px; overflow: auto; }
+    .matrix-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #aaa; padding: 16px 20px 0; }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; padding: 12px 10px; text-align: center; border-bottom: 1px solid #f0f0ea; white-space: nowrap; }
+    th.th-director { text-align: left; padding-left: 20px; min-width: 130px; }
+    th.th-total { background: #fafaf8; }
+    td { padding: 10px; text-align: center; border-bottom: 1px solid #f0f0ea; font-size: 13px; font-weight: 700; }
+    td.td-director { text-align: left; padding-left: 20px; font-size: 13px; font-weight: 700; color: #333; }
+    td.td-total { background: #fafaf8; font-size: 14px; font-weight: 800; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafaf8; }
+    tr:hover td.td-total { background: #f0f0ea; }
+
+    .cell-ok { color: #1a7a45; }
+    .cell-ko { color: #b94040; }
+    .cell-empty { color: #ddd; font-weight: 600; font-size: 12px; }
+    .cell-pending { color: #c07000; font-size: 11px; font-weight: 700; }
+
+    .cell-btn { cursor: pointer; border-radius: 6px; padding: 4px 6px; transition: background 0.1s; display: inline-block; }
+    .cell-btn:hover { background: #f0f0ea; }
+
+    /* MODAL DETALLE */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: #fff; border-radius: 18px; padding: 28px; width: 100%; max-width: 460px; margin: 1rem; box-shadow: 0 20px 60px rgba(0,0,0,0.15); transform: translateY(12px); transition: transform 0.2s; max-height: 90vh; overflow-y: auto; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .modal-header h2 { font-size: 16px; font-weight: 800; }
+    .modal-header p { font-size: 12px; color: #aaa; font-weight: 600; margin-top: 2px; }
+    .btn-close { background: none; border: none; cursor: pointer; font-size: 20px; color: #aaa; line-height: 1; padding: 0; }
+    .detail-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f0f0ea; font-size: 13px; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row span:first-child { font-weight: 600; color: #555; }
+    .detail-row span:last-child { font-weight: 700; }
+    .detail-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #aaa; margin: 16px 0 8px; }
+    .detail-result { border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+    .detail-result.ok { background: #edfaf2; }
+    .detail-result.ko { background: #fff5f5; }
+    .detail-result .dr-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #777; margin-bottom: 3px; }
+    .detail-result .dr-sub { font-size: 13px; font-weight: 700; }
+    .detail-result .dr-value { font-size: 24px; font-weight: 800; }
+    .detail-result.ok .dr-value { color: #1a7a45; }
+    .detail-result.ko .dr-value { color: #b94040; }
+
+    /* PENDIENTES */
+    .pendientes-banner { background: #fff8ed; border: 1px solid #f0d88a; border-radius: 12px; padding: 14px 18px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .pendientes-banner span { font-size: 13px; font-weight: 700; color: #7a5000; flex: 1; }
+    .pendientes-list { font-size: 12px; font-weight: 600; color: #a07030; margin-top: 4px; }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 4rem; color: #aaa; font-size: 14px; font-weight: 600; }
+
+    /* VISTA DIRECTOR */
+    .director-header { margin-bottom: 1.5rem; }
+    .director-header h2 { font-size: 18px; font-weight: 800; }
+    .director-header p { font-size: 13px; color: #777; font-weight: 600; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-left">
+    <img src="https://es.hoy-voy.com/assets/header/hoy-voy-logo.png" alt="Hoy Voy" />
+    <span class="top-bar-label">Panel de horas formativas</span>
+  </div>
+  <div class="top-bar-right" id="top-right" style="display:none">
+    <span class="user-badge" id="user-badge"></span>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-view">
+  <div class="login-card">
+    <h2>Acceder al panel</h2>
+    <p>Introduce tu email corporativo para ver tu panel de horas formativas.</p>
+    <input type="email" id="login-email" placeholder="tunombre@hoyvoy.com" />
+    <button class="btn-primary" onclick="doLogin()">Acceder</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel-view" style="display:none">
+  <div class="hero">
+    <h1 id="panel-title">Panel de horas formativas</h1>
+    <div class="hero-controls">
+      <select id="year-select" onchange="renderPanel()"></select>
+    </div>
+  </div>
+
+  <div class="main" id="main-content">
+    <div class="loading">Cargando datos...</div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-title">Detalle</h2>
+        <p id="modal-subtitle"></p>
+      </div>
+      <button class="btn-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwevUGoPPns9wpGSwv_pC6b3y9xaxOCMQses7Ln9lvJH8frWOGYBPRfwcJ8yAeDpqpRCg/exec';
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  let currentUser = null;
+  let isAdmin = false;
+  let allRows = [];
+  let directores = [];
+  let selectedYear = new Date().getFullYear();
+
+  // ── LOGIN ──────────────────────────────────────────────────────────────────
+
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const err   = document.getElementById('login-error');
+    if (!email) { err.textContent = 'Introduce tu email'; return; }
+
+    err.textContent = 'Verificando...';
+    try {
+      const res  = await fetch(`${SCRIPT_URL}?action=config&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+
+      // Verificar que el email es admin o director conocido
+      const esDirector = data.directores.some(d => d.email === email);
+      if (!data.isAdmin && !esDirector) {
+        err.textContent = 'Email no reconocido. Contacta con dirección.';
+        return;
+      }
+
+      currentUser = email;
+      isAdmin     = data.isAdmin;
+      directores  = data.directores;
+
+      // Cargar datos
+      const res2  = await fetch(`${SCRIPT_URL}?action=data&email=${encodeURIComponent(email)}`);
+      const data2 = await res2.json();
+      allRows = data2.rows || [];
+
+      sessionStorage.setItem('hv_user', email);
+      showPanel();
+    } catch(e) {
+      err.textContent = 'Error de conexión. Inténtalo de nuevo.';
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem('hv_user');
+    currentUser = null; isAdmin = false; allRows = []; directores = [];
+    document.getElementById('login-view').style.display = '';
+    document.getElementById('panel-view').style.display = 'none';
+    document.getElementById('top-right').style.display = 'none';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-error').textContent = '';
+  }
+
+  function showPanel() {
+    document.getElementById('login-view').style.display = 'none';
+    document.getElementById('panel-view').style.display = '';
+    document.getElementById('top-right').style.display = '';
+    document.getElementById('user-badge').textContent = currentUser;
+
+    // Años disponibles
+    const years = [...new Set(allRows.map(r => r['Año']))].sort((a,b) => b-a);
+    if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+    const sel = document.getElementById('year-select');
+    sel.innerHTML = years.map(y => `<option value="${y}" ${y==selectedYear?'selected':''}>${y}</option>`).join('');
+
+    renderPanel();
+  }
+
+  function renderPanel() {
+    selectedYear = parseInt(document.getElementById('year-select').value);
+    const main   = document.getElementById('main-content');
+
+    if (isAdmin) renderAdmin(main);
+    else renderDirector(main);
+  }
+
+  // ── VISTA ADMIN ────────────────────────────────────────────────────────────
+
+  function renderAdmin(main) {
+    document.getElementById('panel-title').textContent = 'Panel de horas formativas';
+    const rows = allRows.filter(r => r['Año'] == selectedYear);
+
+    // Índice: email → mes → fila
+    const idx = {};
+    rows.forEach(r => {
+      const email = r['Email'].trim().toLowerCase();
+      if (!idx[email]) idx[email] = {};
+      idx[email][r['Mes']] = r;
+    });
+
+    // KPIs del mes actual
+    const mesActual = MESES[new Date().getMonth()];
+    const enviadosMes = directores.filter(d => idx[d.email] && idx[d.email][mesActual]);
+    const enVerde     = enviadosMes.filter(d => idx[d.email][mesActual]['Balance'] <= 0);
+    const enRojo      = enviadosMes.filter(d => idx[d.email][mesActual]['Balance'] > 0);
+    const pendientes  = directores.filter(d => !idx[d.email] || !idx[d.email][mesActual]);
+
+    let html = `<div class="kpis">
+      <div class="kpi"><div class="kpi-label">Directores activos</div><div class="kpi-value">${directores.length}</div></div>
+      <div class="kpi"><div class="kpi-label">Enviados ${mesActual}</div><div class="kpi-value">${enviadosMes.length}</div></div>
+      <div class="kpi"><div class="kpi-label">En verde ${mesActual}</div><div class="kpi-value green">${enVerde.length}</div></div>
+      <div class="kpi"><div class="kpi-label">En rojo ${mesActual}</div><div class="kpi-value red">${enRojo.length}</div></div>
+      <div class="kpi"><div class="kpi-label">Sin enviar ${mesActual}</div><div class="kpi-value orange">${pendientes.length}</div></div>
+    </div>`;
+
+    // Banner pendientes
+    if (pendientes.length > 0) {
+      html += `<div class="pendientes-banner">
+        <div>
+          <span>⚠️ ${pendientes.length} director${pendientes.length>1?'es':''} sin informe de ${mesActual}</span>
+          <div class="pendientes-list">${pendientes.map(d => `${d.centro} (${d.email})`).join(' · ')}</div>
+        </div>
+      </div>`;
+    }
+
+    // Matriz
+    html += `<div class="matrix-wrap"><div class="matrix-title">Balance mensual por director (${selectedYear})</div><table>
+      <thead><tr>
+        <th class="th-director">Director</th>
+        ${MESES.map(m => `<th>${m.substring(0,3)}</th>`).join('')}
+        <th class="th-total">Total</th>
+      </tr></thead><tbody>`;
+
+    directores.forEach(d => {
+      const nombre = d.email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      let totalBalance = 0;
+      let totalEnviados = 0;
+
+      const cells = MESES.map(mes => {
+        const r = idx[d.email] && idx[d.email][mes];
+        if (!r) {
+          // ¿Es un mes pasado o futuro?
+          const mesIdx   = MESES.indexOf(mes);
+          const mesActIdx = new Date().getMonth();
+          const esPasado = selectedYear < new Date().getFullYear() ||
+            (selectedYear == new Date().getFullYear() && mesIdx < mesActIdx);
+          if (esPasado) return `<td><span class="cell-pending">Pendiente</span></td>`;
+          return `<td><span class="cell-empty">—</span></td>`;
+        }
+        const bal  = parseFloat(r['Balance']);
+        const disp = Math.abs(bal).toFixed(1).replace('.',',');
+        const sign = bal > 0.05 ? '-' : bal < -0.05 ? '+' : '±';
+        const cls  = bal > 0.05 ? 'cell-ko' : bal < -0.05 ? 'cell-ok' : '';
+        totalBalance += bal <= 0 ? Math.abs(bal) : -Math.abs(bal); // acumulado real
+        totalEnviados++;
+        return `<td><span class="cell-btn ${cls}" onclick='openDetail(${JSON.stringify(r)})'>${sign}${disp}h</span></td>`;
+      });
+
+      const totalDisp = Math.abs(totalBalance).toFixed(1).replace('.',',');
+      const totalSign = totalBalance >= 0 ? '+' : '-';
+      const totalCls  = totalBalance >= 0 ? 'cell-ok' : 'cell-ko';
+
+      html += `<tr>
+        <td class="td-director">${d.centro}<br><small style="color:#aaa;font-weight:600;font-size:11px;">${d.email}</small></td>
+        ${cells.join('')}
+        <td class="td-total ${totalCls}">${totalEnviados > 0 ? totalSign+totalDisp+'h' : '—'}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    main.innerHTML = html;
+  }
+
+  // ── VISTA DIRECTOR ─────────────────────────────────────────────────────────
+
+  function renderDirector(main) {
+    const centro = directores.find(d => d.email === currentUser);
+    const nombre = currentUser.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    document.getElementById('panel-title').textContent = `Mis horas · ${centro ? centro.centro : nombre}`;
+
+    const rows = allRows.filter(r => r['Año'] == selectedYear);
+    const idx  = {};
+    rows.forEach(r => { idx[r['Mes']] = r; });
+
+    let totalBalance = 0;
+    let html = `<div class="director-header">
+      <h2>${nombre}</h2>
+      <p>${centro ? centro.centro : ''} · ${selectedYear}</p>
+    </div>
+    <div class="matrix-wrap"><table>
+      <thead><tr><th style="text-align:left;padding-left:20px;">Mes</th><th>H. que tocaban</th><th>H. realizadas</th><th>Balance</th></tr></thead>
+      <tbody>`;
+
+    MESES.forEach(mes => {
+      const r = idx[mes];
+      if (!r) {
+        const mesIdx    = MESES.indexOf(mes);
+        const mesActIdx = new Date().getMonth();
+        const esPasado  = selectedYear < new Date().getFullYear() ||
+          (selectedYear == new Date().getFullYear() && mesIdx < mesActIdx);
+        html += `<tr>
+          <td style="text-align:left;padding-left:20px;font-weight:700;">${mes}</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td>${esPasado ? '<span class="cell-pending">Pendiente</span>' : '<span class="cell-empty">—</span>'}</td>
+        </tr>`;
+        return;
+      }
+      const bal   = parseFloat(r['Balance']);
+      const disp  = Math.abs(bal).toFixed(1).replace('.',',');
+      const sign  = bal > 0.05 ? '-' : bal < -0.05 ? '+' : '±';
+      const cls   = bal > 0.05 ? 'cell-ko' : bal < -0.05 ? 'cell-ok' : '';
+      totalBalance += bal <= 0 ? Math.abs(bal) : -Math.abs(bal);
+
+      html += `<tr>
+        <td style="text-align:left;padding-left:20px;font-weight:700;">${mes}</td>
+        <td>${parseFloat(r['H.Mensuales']).toFixed(1).replace('.',',')}h</td>
+        <td>${parseFloat(r['H.Realizadas']).toFixed(1).replace('.',',')}h</td>
+        <td><span class="cell-btn ${cls}" onclick='openDetail(${JSON.stringify(r)})'>${sign}${disp}h</span></td>
+      </tr>`;
+    });
+
+    const totalDisp = Math.abs(totalBalance).toFixed(1).replace('.',',');
+    const totalSign = totalBalance >= 0 ? '+' : '-';
+    const totalCls  = totalBalance >= 0 ? 'cell-ok' : 'cell-ko';
+
+    html += `<tr>
+      <td style="text-align:left;padding-left:20px;font-weight:800;background:#fafaf8;">Total ${selectedYear}</td>
+      <td style="background:#fafaf8;">—</td><td style="background:#fafaf8;">—</td>
+      <td style="background:#fafaf8;font-size:15px;font-weight:800;" class="${totalCls}">${totalSign}${totalDisp}h</td>
+    </tr>`;
+
+    html += `</tbody></table></div>`;
+    main.innerHTML = html;
+  }
+
+  // ── MODAL DETALLE ──────────────────────────────────────────────────────────
+
+  function openDetail(r) {
+    const bal     = parseFloat(r['Balance']);
+    const isOk    = bal <= 0.05;
+    const balDisp = Math.abs(bal).toFixed(1).replace('.',',');
+    const sign    = bal > 0.05 ? '-' : '+';
+    const texto   = bal > 0.05 ? 'Faltan horas por realizar' : 'Horas acumuladas de más';
+
+    document.getElementById('modal-title').textContent = `${r['Director']} · ${r['Mes']} ${r['Año']}`;
+    document.getElementById('modal-subtitle').textContent = r['Email'];
+
+    document.getElementById('modal-body').innerHTML = `
+      <div class="detail-section">Estructura</div>
+      <div class="detail-row"><span>Centros / secciones</span><span>${r['Centros']}</span></div>
+      <div class="detail-row"><span>Profesores activos</span><span>${r['Profesores']}</span></div>
+      <div class="detail-row"><span>ATT</span><span>${r['ATT']}</span></div>
+      <div class="detail-row"><span>Horas semanales</span><span>${parseFloat(r['H.Semanales']).toFixed(1).replace('.',',')}h</span></div>
+      <div class="detail-row"><span>Horas mensuales que le tocaban</span><span><strong>${parseFloat(r['H.Mensuales']).toFixed(1).replace('.',',')}h</strong></span></div>
+
+      <div class="detail-section">Tareas realizadas</div>
+      <div class="detail-row"><span>Cursos teóricos (×16h)</span><span>${r['Cursos']}</span></div>
+      <div class="detail-row"><span>Prácticas (×0,75h)</span><span>${r['Prácticas']}</span></div>
+      <div class="detail-row"><span>Masterclass (×2h)</span><span>${r['Masterclass']}</span></div>
+      <div class="detail-row"><span>Evaluadores (×1h)</span><span>${r['Evaluadores']}</span></div>
+      <div class="detail-row"><span>Asistencias a examen (×1h)</span><span>${r['Asist.Examen']}</span></div>
+      <div class="detail-row"><span>Alumnos a examen (×0,75h)</span><span>${r['Alumnos.Examen']}</span></div>
+      <div class="detail-row"><span>Días festivos</span><span>${r['Festivos']}</span></div>
+      <div class="detail-row"><span>Total horas realizadas</span><span><strong>${parseFloat(r['H.Realizadas']).toFixed(1).replace('.',',')}h</strong></span></div>
+
+      <div class="detail-result ${isOk?'ok':'ko'}">
+        <div><div class="dr-label">Balance</div><div class="dr-sub">${texto}</div></div>
+        <div class="dr-value">${sign}${balDisp}h</div>
+      </div>`;
+
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+  function closeModalOutside(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+  // ── INIT ───────────────────────────────────────────────────────────────────
+
+  async function init() {
+    const saved = sessionStorage.getItem('hv_user');
+    if (saved) {
+      document.getElementById('login-email').value = saved;
+      await doLogin();
+    }
+  }
+
+  document.getElementById('login-email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  init();
+</script>
+</body>
+</html>

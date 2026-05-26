@@ -185,15 +185,11 @@
     const email = document.getElementById('login-email').value.trim().toLowerCase();
     const err   = document.getElementById('login-error');
     if (!email) { err.textContent = 'Introduce tu email'; return; }
-
     err.textContent = 'Enviando código...';
     try {
-      const res  = await fetch(SCRIPT_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'requestPin', email })
-      });
-      // no-cors no devuelve body, asumimos ok si no hay error
+      const res  = await fetch(`${SCRIPT_URL}?action=requestPin&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (!data.ok) { err.textContent = data.error || 'Email no reconocido'; return; }
       document.getElementById('step-email').style.display = 'none';
       document.getElementById('step-pin').style.display = '';
       document.getElementById('pin-desc').textContent = `Hemos enviado un código de 6 dígitos a ${email}. Caduca en 10 minutos.`;
@@ -208,18 +204,11 @@
     const pin   = document.getElementById('login-pin').value.trim();
     const err   = document.getElementById('pin-error');
     if (pin.length !== 6) { err.textContent = 'El código debe tener 6 dígitos'; return; }
-
     err.textContent = 'Verificando...';
     try {
-      const res  = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verifyPin', email, pin })
-      });
+      const res  = await fetch(`${SCRIPT_URL}?action=verifyPin&email=${encodeURIComponent(email)}&pin=${pin}`);
       const data = await res.json();
       if (!data.ok) { err.textContent = 'Código incorrecto o caducado. Solicita uno nuevo.'; return; }
-
-      // PIN correcto — cargar datos
       await loadAndShow(email);
     } catch(e) {
       err.textContent = 'Error de conexión. Inténtalo de nuevo.';

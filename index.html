@@ -34,7 +34,9 @@
     .login-card input:focus { border-color: #c8ba00; }
     .btn-primary { width: 100%; padding: 12px; border: none; border-radius: 9px; background: #1a1a1a; color: #fff; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
     .btn-primary:hover { opacity: 0.8; }
+    .btn-secondary { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 9px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; color: #777; }
     .login-error { font-size: 13px; font-weight: 700; color: #b94040; margin-top: 10px; min-height: 18px; }
+    .pin-input { font-size: 28px !important; font-weight: 800 !important; letter-spacing: 0.3em; text-align: center !important; background: #fffbe6 !important; border-color: #c8ba00 !important; }
 
     /* MAIN */
     .main { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem 4rem; }
@@ -122,12 +124,20 @@
 
 <!-- LOGIN -->
 <div class="login-wrap" id="login-view">
-  <div class="login-card">
+  <div class="login-card" id="step-email">
     <h2>Acceder al panel</h2>
-    <p>Introduce tu email corporativo para ver tu panel de horas formativas.</p>
+    <p>Introduce tu email corporativo. Te enviaremos un código de acceso.</p>
     <input type="email" id="login-email" placeholder="tunombre@hoyvoy.com" />
-    <button class="btn-primary" onclick="doLogin()">Acceder</button>
+    <button class="btn-primary" onclick="requestPin()">Enviar código</button>
     <div class="login-error" id="login-error"></div>
+  </div>
+  <div class="login-card" id="step-pin" style="display:none">
+    <h2>Introduce tu código</h2>
+    <p id="pin-desc">Hemos enviado un código de 6 dígitos a tu email. Caduca en 10 minutos.</p>
+    <input type="text" id="login-pin" class="pin-input" placeholder="000000" maxlength="6" inputmode="numeric" />
+    <button class="btn-primary" onclick="verifyPin()">Acceder</button>
+    <button class="btn-secondary" onclick="backToEmail()">← Cambiar email</button>
+    <div class="login-error" id="pin-error"></div>
   </div>
 </div>
 
@@ -171,36 +181,75 @@
 
   // ── LOGIN ──────────────────────────────────────────────────────────────────
 
-  async function doLogin() {
+  async function requestPin() {
     const email = document.getElementById('login-email').value.trim().toLowerCase();
     const err   = document.getElementById('login-error');
     if (!email) { err.textContent = 'Introduce tu email'; return; }
 
+    err.textContent = 'Enviando código...';
+    try {
+      const res  = await fetch(SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'requestPin', email })
+      });
+      // no-cors no devuelve body, asumimos ok si no hay error
+      document.getElementById('step-email').style.display = 'none';
+      document.getElementById('step-pin').style.display = '';
+      document.getElementById('pin-desc').textContent = `Hemos enviado un código de 6 dígitos a ${email}. Caduca en 10 minutos.`;
+      document.getElementById('login-pin').focus();
+    } catch(e) {
+      err.textContent = 'Error al enviar el código. Inténtalo de nuevo.';
+    }
+  }
+
+  async function verifyPin() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const pin   = document.getElementById('login-pin').value.trim();
+    const err   = document.getElementById('pin-error');
+    if (pin.length !== 6) { err.textContent = 'El código debe tener 6 dígitos'; return; }
+
     err.textContent = 'Verificando...';
     try {
-      const res  = await fetch(`${SCRIPT_URL}?action=config&email=${encodeURIComponent(email)}`);
+      const res  = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verifyPin', email, pin })
+      });
       const data = await res.json();
+      if (!data.ok) { err.textContent = 'Código incorrecto o caducado. Solicita uno nuevo.'; return; }
 
-      // Verificar que el email es admin o director conocido
-      const esDirector = data.directores.some(d => d.email === email);
-      if (!data.isAdmin && !esDirector) {
-        err.textContent = 'Email no reconocido. Contacta con dirección.';
-        return;
-      }
+      // PIN correcto — cargar datos
+      await loadAndShow(email);
+    } catch(e) {
+      err.textContent = 'Error de conexión. Inténtalo de nuevo.';
+    }
+  }
+
+  function backToEmail() {
+    document.getElementById('step-pin').style.display = 'none';
+    document.getElementById('step-email').style.display = '';
+    document.getElementById('login-error').textContent = '';
+    document.getElementById('pin-error').textContent = '';
+    document.getElementById('login-pin').value = '';
+  }
+
+  async function loadAndShow(email) {
+    try {
+      const res1 = await fetch(`${SCRIPT_URL}?action=config&email=${encodeURIComponent(email)}`);
+      const cfg  = await res1.json();
+      const res2 = await fetch(`${SCRIPT_URL}?action=data&email=${encodeURIComponent(email)}`);
+      const d2   = await res2.json();
 
       currentUser = email;
-      isAdmin     = data.isAdmin;
-      directores  = data.directores;
-
-      // Cargar datos
-      const res2  = await fetch(`${SCRIPT_URL}?action=data&email=${encodeURIComponent(email)}`);
-      const data2 = await res2.json();
-      allRows = data2.rows || [];
+      isAdmin     = cfg.isAdmin;
+      directores  = cfg.directores;
+      allRows     = d2.rows || [];
 
       sessionStorage.setItem('hv_user', email);
       showPanel();
     } catch(e) {
-      err.textContent = 'Error de conexión. Inténtalo de nuevo.';
+      document.getElementById('pin-error').textContent = 'Error al cargar datos.';
     }
   }
 
@@ -210,8 +259,12 @@
     document.getElementById('login-view').style.display = '';
     document.getElementById('panel-view').style.display = 'none';
     document.getElementById('top-right').style.display = 'none';
+    document.getElementById('step-email').style.display = '';
+    document.getElementById('step-pin').style.display = 'none';
     document.getElementById('login-email').value = '';
+    document.getElementById('login-pin').value = '';
     document.getElementById('login-error').textContent = '';
+    document.getElementById('pin-error').textContent = '';
   }
 
   function showPanel() {
@@ -432,14 +485,14 @@
 
   async function init() {
     const saved = sessionStorage.getItem('hv_user');
-    if (saved) {
-      document.getElementById('login-email').value = saved;
-      await doLogin();
-    }
+    if (saved) await loadAndShow(saved);
   }
 
   document.getElementById('login-email').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
+    if (e.key === 'Enter') requestPin();
+  });
+  document.getElementById('login-pin').addEventListener('keydown', e => {
+    if (e.key === 'Enter') verifyPin();
   });
 
   init();

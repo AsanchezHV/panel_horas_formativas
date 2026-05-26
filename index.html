@@ -171,6 +171,10 @@
 </div>
 
 <script>
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwevUGoPPns9wpGSwv_pC6b3y9xaxOCMQses7Ln9lvJH8frWOGYBPRfwcJ8yAeDpqpRCg/exec';
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  
   function fetchGAS(params) {
     return new Promise((resolve, reject) => {
       const cbName = 'cb_' + Math.random().toString(36).slice(2);

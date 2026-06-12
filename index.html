@@ -210,16 +210,27 @@ async function requestPin() {
   const err   = document.getElementById('login-error');
   if (!email) { err.textContent = 'Introduce tu email'; return; }
   err.textContent = 'Enviando código...';
-  
-  const img = new Image();
-  img.src = `${SCRIPT_URL}?action=requestPin&email=${encodeURIComponent(email)}&context=login&t=${Date.now()}`;
-  
-  setTimeout(() => {
+
+  try {
+    const res  = await fetch(`${SCRIPT_URL}?action=requestPin&email=${encodeURIComponent(email)}&context=login`);
+    const data = await res.json();
+    if (!data.ok) {
+      err.textContent = data.error || 'Email no reconocido. Contacta con dirección.';
+      return;
+    }
     document.getElementById('step-email').style.display = 'none';
-    document.getElementById('step-pin').style.display = '';
+    document.getElementById('step-pin').style.display = 'block';
     document.getElementById('pin-desc').textContent = `Hemos enviado un código de 6 dígitos a ${email}. Caduca en 10 minutos.`;
     document.getElementById('login-pin').focus();
-  }, 2000);
+    err.textContent = '';
+  } catch(e) {
+    // Fallback CORS — asumimos que se envió
+    document.getElementById('step-email').style.display = 'none';
+    document.getElementById('step-pin').style.display = 'block';
+    document.getElementById('pin-desc').textContent = `Hemos enviado un código de 6 dígitos a ${email}. Caduca en 10 minutos.`;
+    document.getElementById('login-pin').focus();
+    err.textContent = '';
+  }
 }
 
   async function verifyPin() {

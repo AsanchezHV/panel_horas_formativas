@@ -212,7 +212,7 @@ async function requestPin() {
   err.textContent = 'Enviando código...';
   
   const img = new Image();
-  img.src = `${SCRIPT_URL}?action=requestPin&email=${encodeURIComponent(email)}&t=${Date.now()}`;
+  img.src = `${SCRIPT_URL}?action=requestPin&email=${encodeURIComponent(email)}&context=login&t=${Date.now()}`;
   
   setTimeout(() => {
     document.getElementById('step-email').style.display = 'none';
